@@ -5,7 +5,7 @@ poll = client.openPolling()
 with poll.getresponse() as response:
     while not response.closed:
         for chunk in response:
-            if "data:" in chunk.decode('utf-8'):
+            if "data:{" in chunk.decode('utf-8'):
                 chunk = json.loads(chunk.decode('utf-8').replace("data:",""))
                 event = chunk["event"]
                 if event == "chat" and "subEvent" in chunk and chunk["subEvent"] == "message":
