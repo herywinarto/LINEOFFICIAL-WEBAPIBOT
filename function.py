@@ -1,4 +1,4 @@
-import requests, json, time, urllib.parse, cv2, numpy, http.client, random, string, io, sys
+import requests, json, time, urllib.parse, cv2, numpy, http.client, random, string, io, sys, os
 
 class Client():
     def __init__(self):
@@ -201,9 +201,9 @@ class Client():
             allow_redirects=True
             ).text)
 
-    def getChatList(self, folderType='ALL'): # ['NONE', 'ALL', 'INBOX', 'UNREAD', 'FOLLOW_UP', 'DONE', 'SPAM']
+    def getChatList(self, folderType='ALL', limit='25'): # ['NONE', 'ALL', 'INBOX', 'UNREAD', 'FOLLOW_UP', 'DONE', 'SPAM']
         return json.loads(self.session.get(
-            url='https://chat.line.biz/api/v1/bots/'+self.mid+'/chats?folderType='+folderType+'&tagIds=&limit=25',
+            url='https://chat.line.biz/api/v1/bots/'+self.mid+'/chats?folderType='+folderType+'&tagIds=&limit='+limit,
             headers=self.defaultHeaders,
             data=None,
             allow_redirects=True
@@ -288,14 +288,34 @@ class Client():
             data=None,
             allow_redirects=True
             ).text)
-    
+
+    def kontak(nah):
+        r = []
+        for i in range(len(nah)):
+            r.append(nah[i]['contactId'])
+        return r
+
     def getContactList(self):
-        return json.loads(self.session.get(
-            url='https://chat.line.biz/api/v1/bots/'+self.mid+'/contacts?query=&sortKey=DISPLAY_NAME&sortOrder=ASC&excludeSpam=true&limit=100',
-            headers=self.defaultHeaders,
-            data=None,
-            allow_redirects=True
-            ).text)["list"]
+        x = []
+        s = json.loads(self.session.get(
+        url='https://chat.line.biz/api/v1/bots/'+self.mid+'/contacts?query=&sortKey=DISPLAY_NAME&sortOrder=ASC&excludeSpam=true&limit=100',
+        headers=self.defaultHeaders,
+        data=None,
+        allow_redirects=True
+        ).text)
+        x.extend(s['list'])
+        if 'next' in s:
+            while (True):
+                s = json.loads(self.session.get(
+                url='https://chat.line.biz/api/v1/bots/'+self.mid+'/contacts?query=&sortKey=DISPLAY_NAME&sortOrder=ASC&excludeSpam=true&limit=100&next='+s["next"],
+                headers=self.defaultHeaders,
+                data=None,
+                allow_redirects=True
+                ).text)
+                x.extend(s['list'])
+                if 'next' not in s:
+                    break
+        return x
     
     def getMembersOfChat(self, chatId):
         return json.loads(self.session.get(
@@ -313,6 +333,16 @@ class Client():
             json=data,
             allow_redirects=True
             ).text)
+    
+#    def sendImage(self, chatId, contentHash):
+#        tms = int(time.time())
+#        data = {"type":"image","contentProvider":{"type":"line","contentHash":contentHash,"expired":False,"expiredAt":str(tms)},"contentHash":contentHash,"expired":False,"expiredAt":str(tms),"sendId":chatId+"_"+str(tms)+"_"+''.join(random.choice(string.digits) for i in range(8))}
+#        return json.loads(self.session.post(
+#            url='https://chat.line.biz/api/v1/bots/'+self.mid+'/messages/'+chatId+'/sendImage',
+#            headers=self.defaultHeaders,
+#            json=data,
+#            allow_redirects=True
+#            ).text)
 
     def sendSticker(self, chatId, packageId, stickerId):
         data = {"stickerId":stickerId,"packageId":packageId,"type":"sticker","sendId":chatId+"_"+str(int(time.time()))+"_"+''.join(random.choice(string.digits) for i in range(8))}
